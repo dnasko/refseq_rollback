@@ -80,7 +80,7 @@ my($catalog,$refseq,$outfile,$help,$manual);
 
 GetOptions (	
 				"c|catalog=s"	=>	\$catalog,
-				"r|refseq=s"    =>      \$refseq,
+				"f|fasta=s"    =>      \$refseq,
                                 "o|out=s"	=>	\$outfile,
 				"h|help"	=>	\$help,
 				"m|manual"	=>	\$manual);
@@ -92,6 +92,9 @@ pod2usage( -msg  => "\n\n ERROR!  Required argument --refseq not found.\n\n", -e
 pod2usage( -msg  => "\n\n ERROR!  Required argument --catalog not found.\n\n", -exitval => 2, -verbose => 1)  if (! $catalog );
 pod2usage( -msg  => "\n\n ERROR!  Required argument --out not found.\n\n", -exitval => 2, -verbose => 1)  if (! $outfile );
 
+my %Acc; ## Dictionary holds the IDs from the Catalog file
+my $print_flag = 0; ## flag used to turn on/off printing when going through the FASTA file.
+
 if ($catalog =~ m/\.gz$/) { ## if a gzip compressed infile
     open(IN,"gunzip -c $catalog |") || die "\n\n Cannot open the catalog file: $catalog\n\n";
 }
@@ -99,10 +102,41 @@ else { ## If not gzip comgressed
     open(IN,"<$catalog") || die "\n\n Cannot open the catalog file: $catalog\n\n";
 }
 while(<IN>) {
-    # $_ =~ s/\r[\n]*/\n/gm;  ## takes care of weird return carriages
     chomp;
-    
+    my @a = split(/\t/, $_);
+    $Acc{$a[2]} = 1; ## The 3rd column contains the ACC for each sequence. Save that in the dictionary.
 }
 close(IN);
 
+
+open(OUT,">$outfile") || die "\n Cannot write to the file: $outfile\n";
+if ($refseq =~ m/\.gz$/) { ## if a gzip compressed infile
+    open(IN,"gunzip -c $refseq |") || die "\n\n Cannot open the catalog file: $refseq\n\n";
+}
+else { ## If not gzip comgressed
+    open(IN,"<$refseq") || die "\n\n Cannot open the catalog file: $refseq\n\n";
+}
+while(<IN>) {
+    chomp;
+    if ($_ =~ m/^>/) { ## If this is a header line
+	$print_flag = 0; ## reset
+	my $header = parse_header($_); ## parse for the header
+	if (exists $Acc{$header}) { ## if the header was in the catalog file, then print it
+	    print OUT $_ . "\n";
+	    $print_flag = 1; ## switch this to on so the subsequent lines are printed out
+	}
+    }
+    elsif ($print_flag == 1) { print OUT $_ . "\n"; }
+}
+close(IN);
+close(OUT);
+
 exit 0;
+
+sub parse_header
+{
+    my $s = $_[0];
+    $s =~ s/^>//;
+    $s =~ s/ .*//;
+    return $s;
+}

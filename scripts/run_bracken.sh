@@ -1,6 +1,11 @@
 #!/bin/bash
 set -e
 
+## A small BASH script to run Bracken
+## Usage: ./run_bracken.sh ##
+## Where ## is a ref
+
+
 RELEASE=$1
 cd ${RELEASE}
 
