@@ -1,11 +1,9 @@
 #!/usr/bin/perl -w
 use strict;
 
-## Usage: ./dump_taxonomy_genus.pl /Path/to/names.dmp /Path/to/nodes.dmp /Path/to/RefSeq_catalog_version.txt.gz > RefSeq_version.dump
-
-## Will dump *genus* names for each RefSeq sequence in the catalog file.
-## Does so by using the NCBI taxonomy names.dmp and nodes.dmp files to 
-## build the taxonomic tree in memory and report just genus
+## Convert a version of RefSeq into an OTU table
+## Usage:
+## ./dump_taxonomy_genus.pl ./taxonomy/names.txt ./taxonomy/nodes.dmp ./catalogs/RefSeq-release1.catalog.gz > release_1.tax
 
 my $names_file = $ARGV[0];
 my $nodes_file = $ARGV[1];
@@ -16,7 +14,7 @@ my $max_org;
 my $max_count = 0;
 my $total = 0;
 
-my %Names;  ## $Names{$taxid} = $scientific_name;
+my %Names;
 my %Parent; ## $Parent{$child} = $parent;
 my %Type;   ## $Type{123} = 'species';
 
@@ -55,11 +53,11 @@ exit 0;
 
 sub get_genus
 {
-    my $s = $_[0]; ## NCBI taxonomy ID
-    my $species = "none"; ## set this to none by default. Rarely, but sometimes, a TaxID will not be in the taxonomy files.
+    my $s = $_[0];
+    my $species = "none";
     if (exists $Type{$s}) {
 	my $type = $Type{$s};
-	while($type ne 'genus' && $type ne 'family' && $type ne 'order'  && $type ne 'class'  && $type ne 'phylum'  && $type ne 'kingdom'  && $type ne 'superkingdom' ) { ## while the type is something *below* genus...
+	while($type ne 'genus' && $type ne 'family' && $type ne 'order'  && $type ne 'class'  && $type ne 'phylum'  && $type ne 'kingdom'  && $type ne 'superkingdom' ) {
 	    $s = $Parent{$s};
 	    $type = $Type{$s};
 	}
